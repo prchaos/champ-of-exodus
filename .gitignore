@@ -1,0 +1,5 @@
+.env
+.dockerignore
+secrets/key.json
+token.txt
+key.json

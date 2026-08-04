@@ -1,0 +1,45 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: champ-backend
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: "10"
+    spec:
+      containers:
+        - image: us-central1-docker.pkg.dev/PROJECT_ID/champ-of-exodus/backend:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: GCP_PROJECT_ID
+              value: PROJECT_ID
+            - name: FIRESTORE_EVENTS_COLLECTION
+              value: events
+            - name: GCS_BUCKET_NAME
+              value: champ-of-exodus-assets
+            - name: DISCORD_WEBHOOK_URL
+              valueFrom:
+                secretKeyRef:
+                  name: discord-webhook-url
+                  key: latest
+---
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: champ-frontend
+  annotations:
+    run.googleapis.com/ingress: all
+spec:
+  template:
+    spec:
+      containers:
+        - image: us-central1-docker.pkg.dev/PROJECT_ID/champ-of-exodus/frontend:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_BASE_URL
+              value: https://api.example.com

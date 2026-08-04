@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: champ-backend
+    environment:
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-project}
+      FIRESTORE_EVENTS_COLLECTION: ${FIRESTORE_EVENTS_COLLECTION:-events}
+      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
+      GCS_BUCKET_NAME: ${GCS_BUCKET_NAME:-}
+      GOOGLE_APPLICATION_CREDENTIALS: /var/secrets/google/key.json
+    ports:
+      - "8000:8000"
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS_PATH:-./secrets/key.json}:/var/secrets/google/key.json:ro
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: champ-frontend
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
