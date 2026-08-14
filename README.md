@@ -1,61 +1,55 @@
-# Champ of Exodus Template
+# Champ of Exodus
 
-Template project for an Old School Runescape clan site with:
-- Next.js frontend (home, ranks, forum, events)
-- Python FastAPI backend (events CRUD)
-- Discord webhook integration when events are created
-- Firestore and Cloud Storage integration (Google Cloud Python SDK)
-- Docker local development
+An Old School Runescape clan site built with:
+- Next.js (App Router), React, TypeScript, Tailwind CSS, shadcn/ui
+- Prisma + PostgreSQL
+- Discord OAuth sign-in (NextAuth / Auth.js)
+- Docker Compose for local development
 - Cloud Build and Cloud Run deployment assets
-- Terraform for Load Balancer + Cloud DNS + Firestore + Bucket
 
 ## Repository Structure
 
-- `frontend/` Next.js app
-- `backend/` FastAPI app + pytest test suite
+- `frontend/` Next.js app (pages, API routes, Prisma schema)
 - `infra/terraform/` GCP infrastructure
-- `deploy/` Cloud Run service manifests
+- `deploy/` Cloud Run service manifest
 - `cloudbuild.yaml` CI/CD pipeline for Cloud Build
 
 ## Local Prerequisites
 
 - Docker Desktop
-- A GCP service account JSON key with Firestore/Storage permissions
-- Optional: real Discord webhook URL
+- A Discord application (for OAuth) — create one at https://discord.com/developers/applications
+  and add redirect URI `http://localhost:3000/api/auth/callback/discord`
 
 ## Local Setup
 
-1. Copy env template:
+1. Copy env templates:
    ```bash
    cp .env.example .env
+   cp frontend/.env.example frontend/.env
    ```
-2. Place your GCP key at `./secrets/key.json` (or update `GOOGLE_APPLICATION_CREDENTIALS_PATH` in `.env`).
-3. Build images:
+2. Fill in `NEXTAUTH_SECRET` (generate with `openssl rand -base64 32`) and your Discord app's
+   `AUTH_DISCORD_ID` / `AUTH_DISCORD_SECRET` in both `.env` files.
+3. Start Postgres and apply migrations:
    ```bash
-   make docker-build
+   make db-up
+   make prisma-migrate
    ```
-4. Run stack:
+4. Run the full stack:
    ```bash
    make docker-up
    ```
-5. Visit frontend at `http://localhost:3000`.
-6. Backend health check: `http://localhost:8000/health`.
+5. Visit the site at `http://localhost:3000`.
 
 ## Local Testing
 
-Run backend tests in Docker:
-```bash
-make backend-test
-```
+- Browse the Prisma-backed database with `make prisma-studio`.
 
-Tests mock all external Google SDK/network operations.
+## Environment Variables
 
-## Backend Environment Variables
-
-- `GCP_PROJECT_ID` required
-- `FIRESTORE_EVENTS_COLLECTION` default `events`
-- `DISCORD_WEBHOOK_URL` optional (enables Discord posting)
-- `GCS_BUCKET_NAME` optional unless uploading assets
+- `DATABASE_URL` — Postgres connection string (Prisma)
+- `NEXTAUTH_URL` — base URL of the app (`http://localhost:3000` locally)
+- `NEXTAUTH_SECRET` — random secret used to sign session tokens
+- `AUTH_DISCORD_ID` / `AUTH_DISCORD_SECRET` — Discord OAuth app credentials
 
 ## Deploy with Cloud Build
 
@@ -64,7 +58,7 @@ Trigger build manually:
 gcloud builds submit --config cloudbuild.yaml
 ```
 
-Pipeline builds and pushes backend/frontend images, then deploys both services to Cloud Run.
+Pipeline builds and pushes the frontend image, then deploys it to Cloud Run.
 
 ## Provision Infrastructure (Terraform)
 
@@ -76,19 +70,15 @@ terraform apply \
   -var="domain_name=example.com"
 ```
 
-Provisioned resources include:
-- Firestore native database
-- Cloud Storage bucket for assets
-- Cloud DNS managed zone and A records
-- Global HTTPS external load balancer
-- Serverless NEGs routing to Cloud Run frontend/backend
+Note: Terraform currently provisions Firestore-era resources and will be updated for
+Cloud SQL/Postgres as part of the Google Cloud deployment phase.
 
 ## Cloud Run
 
-Use `deploy/cloudrun.yaml` as a baseline manifest for both services.
-Store Discord webhook in Secret Manager and reference it from Cloud Run.
+Use `deploy/cloudrun.yaml` as a baseline manifest. Store `DATABASE_URL`, `NEXTAUTH_SECRET`,
+`AUTH_DISCORD_ID`, and `AUTH_DISCORD_SECRET` in Secret Manager and reference them from Cloud Run
+as part of the Google Cloud deployment phase.
 
 ## Notes
 
 - Replace placeholder image references in `deploy/cloudrun.yaml` before applying.
-- If your project already has Firestore enabled, remove/reconcile the Firestore resource in Terraform.

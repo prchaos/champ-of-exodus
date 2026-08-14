@@ -1,5 +1,13 @@
 .env
+.env.example
+.claude
 .dockerignore
+!frontend/.dockerignore
 secrets/key.json
 token.txt
 key.json
+
+# Node / Next.js
+node_modules/
+.next/
+next-env.d.ts

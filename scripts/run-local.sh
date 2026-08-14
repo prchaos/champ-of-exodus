@@ -7,9 +7,14 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
 cd "${REPO_ROOT}"
 
+echo "Starting Postgres..."
+docker compose up -d db
+
 echo "Building frontend image..."
 docker compose build frontend
 
+echo "Applying database migrations..."
+docker compose run --rm frontend npx prisma migrate deploy
+
 echo "Starting frontend for local testing on http://localhost:3000 ..."
-# This also starts dependent services defined in docker-compose.yml (e.g. backend).
 docker compose up frontend

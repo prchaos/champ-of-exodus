@@ -1,26 +1,36 @@
 services:
-  backend:
-    build:
-      context: ./backend
-    container_name: champ-backend
+  db:
+    image: postgres:16-alpine
+    container_name: champ-db
     environment:
-      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-local-project}
-      FIRESTORE_EVENTS_COLLECTION: ${FIRESTORE_EVENTS_COLLECTION:-events}
-      DISCORD_WEBHOOK_URL: ${DISCORD_WEBHOOK_URL:-}
-      GCS_BUCKET_NAME: ${GCS_BUCKET_NAME:-}
-      GOOGLE_APPLICATION_CREDENTIALS: /var/secrets/google/key.json
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-champ_of_exodus}
     ports:
-      - "8000:8000"
+      - "5432:5432"
     volumes:
-      - ${GOOGLE_APPLICATION_CREDENTIALS_PATH:-./secrets/key.json}:/var/secrets/google/key.json:ro
+      - champ-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build:
       context: ./frontend
     container_name: champ-frontend
     environment:
-      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:8000}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-champ_of_exodus}?schema=public
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:?err}
+      AUTH_DISCORD_ID: ${AUTH_DISCORD_ID:?err}
+      AUTH_DISCORD_SECRET: ${AUTH_DISCORD_SECRET:?err}
     ports:
       - "3000:3000"
     depends_on:
-      - backend
+      db:
+        condition: service_healthy
+
+volumes:
+  champ-db-data:

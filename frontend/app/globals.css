@@ -1,3 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
   --bg-0: #090503;
   --bg-1: #130803;
@@ -12,6 +16,35 @@
   --ember-2: #a72e12;
   --text-main: #fbe7bd;
   --text-muted: #d8bb86;
+
+  /* shadcn/ui tokens, mapped onto the OSRS palette above so shadcn
+     components inherit the same dark/gold theme automatically. */
+  --background: 20 50% 2%;
+  --foreground: 41 89% 86%;
+  --card: 15 67% 5%;
+  --card-foreground: 41 89% 86%;
+  --popover: 15 67% 5%;
+  --popover-foreground: 41 89% 86%;
+  --primary: 43 87% 72%;
+  --primary-foreground: 20 50% 2%;
+  --secondary: 38 65% 52%;
+  --secondary-foreground: 20 50% 2%;
+  --muted: 15 45% 12%;
+  --muted-foreground: 39 51% 69%;
+  --accent: 22 100% 55%;
+  --accent-foreground: 41 89% 86%;
+  --destructive: 11 81% 36%;
+  --destructive-foreground: 41 89% 86%;
+  --border: 38 100% 68%;
+  --input: 15 67% 8%;
+  --ring: 38 100% 68%;
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    border-color: hsl(var(--border));
+  }
 }
 
 * {
