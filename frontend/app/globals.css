@@ -161,8 +161,7 @@ h3 {
 }
 
 p,
-strong,
-label {
+strong {
   color: var(--text-muted);
 }
 
@@ -186,52 +185,6 @@ button.secondary {
   background: linear-gradient(180deg, #f2cb6a 0%, #b47a26 58%, #6b4115 100%);
 }
 
-input,
-textarea,
-select {
-  width: 100%;
-  margin-top: 0.25rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 189, 82, 0.32);
-  background: var(--panel-soft);
-  color: var(--text-main);
-  padding: 0.6rem;
-  font: inherit;
-}
-
-input:focus,
-textarea:focus,
-select:focus {
-  outline: 2px solid rgba(255, 178, 64, 0.52);
-  outline-offset: 1px;
-}
-
-label {
-  display: block;
-  margin-top: 0.6rem;
-  font-weight: 600;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 50;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: rgba(6, 2, 1, 0.72);
-  backdrop-filter: blur(2px);
-}
-
-.modal-panel {
-  width: 100%;
-  max-width: 480px;
-  max-height: 90vh;
-  overflow-y: auto;
-  margin-top: 0;
-}
-
 .modal-actions {
   display: flex;
   gap: 0.6rem;
@@ -243,27 +196,6 @@ label {
   color: var(--ember-1);
   font-size: 0.85rem;
   margin: 0.25rem 0 0;
-}
-
-input[type="date"]::-webkit-calendar-picker-indicator,
-input[type="time"]::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  cursor: pointer;
-}
-
-.paste-target {
-  margin-top: 0.25rem;
-  border: 1px dashed rgba(255, 189, 82, 0.4);
-  border-radius: 8px;
-  padding: 1rem;
-  text-align: center;
-  color: var(--text-muted);
-  cursor: text;
-}
-
-.paste-target:focus {
-  outline: 2px solid rgba(255, 178, 64, 0.52);
-  outline-offset: 1px;
 }
 
 .image-preview {

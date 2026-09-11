@@ -11,7 +11,7 @@ export default async function EventsPage() {
   return (
     <main className="card">
       <h1>Events</h1>
-      <p>Create, edit, and remove clan events. Discord announcements are coming soon.</p>
+      <p>Discord announcements are coming soon.</p>
       <EventsManager events={events} />
     </main>
   );
