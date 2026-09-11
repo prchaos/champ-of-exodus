@@ -47,4 +47,8 @@ jobs:
 
       - name: Terraform plan
         working-directory: infra/terraform
-        run: terraform plan -no-color >> "$GITHUB_STEP_SUMMARY"
+        # -lock=false: champ-plan-readonly intentionally has no write access
+        # to the state bucket (see README.md "One-Time Infrastructure
+        # Setup"), so it can't create/release the GCS lock object. Safe here
+        # since this workflow only ever reads state, never applies.
+        run: terraform plan -no-color -lock=false >> "$GITHUB_STEP_SUMMARY"
