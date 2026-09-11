@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 
-.PHONY: db-up prisma-migrate prisma-studio docker-build docker-up docker-down
+.PHONY: db-up prisma-migrate prisma-studio docker-build docker-up docker-down kms-encrypt-secrets kms-decrypt-secrets
 
 db-up:
 	docker compose up -d db
@@ -20,3 +20,9 @@ docker-up: db-up
 
 docker-down:
 	docker compose down
+
+kms-encrypt-secrets:
+	bash scripts/kms-encrypt-secrets.sh
+
+kms-decrypt-secrets:
+	bash scripts/kms-decrypt-secrets.sh

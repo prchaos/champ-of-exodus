@@ -1,0 +1,50 @@
+name: Terraform Plan Preview
+
+# Read-only visibility into infra changes before merging — never applies,
+# never deploys. Uses a narrower-scoped service account than deploy.yml
+# (champ-plan-readonly, not champ-deploy) since this runs on PRs from
+# branches other than main. See README.md "One-Time Infrastructure Setup".
+
+on:
+  pull_request:
+    branches: [main]
+
+env:
+  # Replace PROJECT_NUMBER with the real value from:
+  #   gcloud projects describe ashendeng-dev --format='value(projectNumber)'
+  WORKLOAD_IDENTITY_PROVIDER: projects/721387251831/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+  PLAN_SERVICE_ACCOUNT: champ-plan-readonly@ashendeng-dev.iam.gserviceaccount.com
+
+permissions:
+  contents: read
+  id-token: write # required for Workload Identity Federation — do not remove
+
+jobs:
+  plan-preview:
+    name: Terraform plan (preview only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.PLAN_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Decrypt secrets
+        run: bash scripts/kms-decrypt-secrets.sh
+
+      - name: Generate Terraform tfvars from decrypted secrets
+        run: bash scripts/generate-tfvars-json.sh
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: infra/terraform
+        run: terraform init
+
+      - name: Terraform plan
+        working-directory: infra/terraform
+        run: terraform plan -no-color >> "$GITHUB_STEP_SUMMARY"

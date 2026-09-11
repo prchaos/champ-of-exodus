@@ -73,3 +73,26 @@ model Rank {
 
   users User[]
 }
+
+enum EventType {
+  SKILL
+  BOSS
+  MINIGAME
+  CUSTOM
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  name        String
+  description String    @db.Text
+  date        DateTime  @db.Date
+  time        String
+  reward      String
+  type        EventType
+  image       String?   @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}

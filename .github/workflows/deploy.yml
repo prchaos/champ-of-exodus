@@ -1,0 +1,126 @@
+name: Deploy to Cloud Run
+
+# Requires one-time manual setup before this can run at all — see
+# README.md "One-Time Infrastructure Setup" (state bucket, Artifact
+# Registry repo, KMS keyring/key, Workload Identity Federation, the
+# `production` GitHub Environment with required reviewers).
+
+on:
+  push:
+    branches: [main]
+
+env:
+  PROJECT_ID: ashendeng-dev
+  REGION: us-central1
+  REPOSITORY: champ-of-exodus
+  SERVICE: champ-frontend
+  IMAGE: us-central1-docker.pkg.dev/ashendeng-dev/champ-of-exodus/frontend
+  # Replace PROJECT_NUMBER with the real value from:
+  #   gcloud projects describe ashendeng-dev --format='value(projectNumber)'
+  WORKLOAD_IDENTITY_PROVIDER: projects/721387251831/locations/global/workloadIdentityPools/github-pool/providers/github-provider
+  DEPLOY_SERVICE_ACCOUNT: champ-deploy@ashendeng-dev.iam.gserviceaccount.com
+
+permissions:
+  contents: read
+  id-token: write # required for Workload Identity Federation — do not remove
+
+jobs:
+  build-plan:
+    name: Build, plan, push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Decrypt secrets
+        run: bash scripts/kms-decrypt-secrets.sh
+
+      - name: Generate Terraform tfvars from decrypted secrets
+        run: bash scripts/generate-tfvars-json.sh
+
+      - name: Build Docker image
+        run: |
+          docker build -t "${IMAGE}:${GITHUB_SHA}" ./frontend
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: infra/terraform
+        run: terraform init
+
+      - name: Terraform plan
+        working-directory: infra/terraform
+        run: terraform plan -out=tfplan
+
+      - name: Post plan to job summary
+        working-directory: infra/terraform
+        run: terraform show -no-color tfplan >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Configure Docker auth for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Push Docker image
+        run: docker push "${IMAGE}:${GITHUB_SHA}"
+
+      - name: Upload Terraform plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: infra/terraform/tfplan
+          retention-days: 1
+
+  approve-and-deploy:
+    name: Deploy to Production?
+    needs: build-plan
+    runs-on: ubuntu-latest
+    environment: production # this is the manual approval gate
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Terraform plan
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan
+          path: infra/terraform
+
+      - id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Decrypt secrets
+        run: bash scripts/kms-decrypt-secrets.sh
+
+      - name: Generate Terraform tfvars from decrypted secrets
+        run: bash scripts/generate-tfvars-json.sh
+
+      - uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform init
+        working-directory: infra/terraform
+        run: terraform init
+
+      - name: Terraform apply
+        working-directory: infra/terraform
+        run: terraform apply tfplan
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.IMAGE }}:${{ github.sha }}
+
+      - name: Print deployed URL
+        run: echo "Deployed to ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"

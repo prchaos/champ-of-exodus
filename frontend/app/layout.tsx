@@ -33,7 +33,7 @@ export default function RootLayout({
             <div className="brand">CHAMP OF EXODUS</div>
             <nav className="nav">
               <Link href="/">Home</Link>
-              <Link href="/ranks">Ranks</Link>
+              <Link href="/members">Members</Link>
               <Link href="/events">Events</Link>
               <Link href="/login">Sign In</Link>
             </nav>
