@@ -145,7 +145,15 @@ deploy — none of it is repeated by CI. All commands target the GCP project
    done
 
    # champ-plan-readonly
-   for role in roles/viewer roles/storage.objectViewer; do
+   # secretAccessor is required because `terraform plan` refreshes existing
+   # google_secret_manager_secret_version resources before diffing, which
+   # reads the live secret payload (secretmanager.versions.access) even
+   # though plan never writes anything. This repo is public, and the PR
+   # preview workflow's Workload Identity Federation binding matches on the
+   # base repo name (not the fork), so a malicious PR can run as this SA —
+   # treat champ-plan-readonly as having read access to all secrets in this
+   # project, not as a purely metadata-only viewer.
+   for role in roles/viewer roles/storage.objectViewer roles/secretmanager.secretAccessor; do
      gcloud projects add-iam-policy-binding ashendeng-dev \
        --member="serviceAccount:champ-plan-readonly@ashendeng-dev.iam.gserviceaccount.com" --role="$role"
    done
