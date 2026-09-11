@@ -87,7 +87,21 @@ resource "google_cloud_run_v2_service" "frontend" {
     ignore_changes = [template[0].containers[0].image]
   }
 
-  depends_on = [google_project_service.required]
+  # The env blocks above reference google_secret_manager_secret.*.secret_id,
+  # which only gives Terraform an implicit dependency on the secret
+  # *containers* existing — not on the secret *versions* having a value, or
+  # on champ-run-sa actually being granted read access to them. Without
+  # these explicit dependencies, Cloud Run can be created before the IAM
+  # grant propagates, and GCP returns NOT_FOUND (not PERMISSION_DENIED) for
+  # a secret the caller isn't yet authorized to read, which is misleading.
+  depends_on = [
+    google_project_service.required,
+    google_secret_manager_secret_version.database_url,
+    google_secret_manager_secret_version.nextauth_secret,
+    google_secret_manager_secret_version.auth_discord_id,
+    google_secret_manager_secret_version.auth_discord_secret,
+    google_secret_manager_secret_iam_member.runtime_access,
+  ]
 }
 
 # Public clan website — matches the --allow-unauthenticated flag already

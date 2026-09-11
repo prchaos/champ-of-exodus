@@ -20,4 +20,3 @@ infra/terraform/terraform.auto.tfvars.json
 secrets/prod.env
 .github/agents/*
 token.txt
-.terraform.lock.hcl
