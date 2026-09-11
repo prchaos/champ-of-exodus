@@ -21,8 +21,10 @@ fi
 rm -f "${OUTPUT_FILE}"
 
 json="{}"
-while IFS='=' read -r key value; do
-  [[ -z "${key}" || "${key}" == \#* ]] && continue
+while IFS= read -r line || [[ -n "${line}" ]]; do
+  [[ -z "${line}" || "${line}" == \#* ]] && continue
+  key="${line%%=*}"
+  value="${line#*=}"
   case "${key}" in
     NEXTAUTH_SECRET)     varname="nextauth_secret" ;;
     AUTH_DISCORD_ID)     varname="auth_discord_id" ;;
