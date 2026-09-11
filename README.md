@@ -5,7 +5,7 @@ An Old School Runescape clan site built with:
 - Prisma + PostgreSQL
 - Discord OAuth sign-in (NextAuth / Auth.js)
 - Docker Compose for local development
-- Terraform + GitHub Actions for GCP deployment
+- Terraform + GitHub Actions for GCP deployment 
 
 ## Repository Structure
 
