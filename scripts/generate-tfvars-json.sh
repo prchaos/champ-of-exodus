@@ -26,11 +26,15 @@ while IFS= read -r line || [[ -n "${line}" ]]; do
   key="${line%%=*}"
   value="${line#*=}"
   case "${key}" in
-    NEXTAUTH_SECRET)     varname="nextauth_secret" ;;
-    AUTH_DISCORD_ID)     varname="auth_discord_id" ;;
-    AUTH_DISCORD_SECRET) varname="auth_discord_secret" ;;
-    DB_PASSWORD)         varname="db_password" ;;
-    *)                   continue ;;
+    NEXTAUTH_SECRET)                       varname="nextauth_secret" ;;
+    AUTH_DISCORD_ID)                       varname="auth_discord_id" ;;
+    AUTH_DISCORD_SECRET)                   varname="auth_discord_secret" ;;
+    DB_PASSWORD)                           varname="db_password" ;;
+    EVENTS_ADMIN_DB_PASSWORD)              varname="events_admin_db_password" ;;
+    EVENTS_ADMIN_EVENTS_WRITER_PASSWORD)   varname="events_admin_events_writer_password" ;;
+    EVENTS_ADMIN_SESSION_SECRET)           varname="events_admin_session_secret" ;;
+    EVENTS_ADMIN_TOTP_ENCRYPTION_KEY)      varname="events_admin_totp_encryption_key" ;;
+    *)                                     continue ;;
   esac
   json="$(printf '%s' "${json}" | jq --arg k "${varname}" --arg v "${value}" '. + {($k): $v}')"
 done < "${PLAINTEXT_FILE}"

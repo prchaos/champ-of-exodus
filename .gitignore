@@ -3,12 +3,17 @@
 .claude
 .dockerignore
 !frontend/.dockerignore
+!events-admin/.dockerignore
 token.txt
 
 # Node / Next.js
 node_modules/
 .next/
 next-env.d.ts
+
+# Prisma-generated clients (regenerated on install via package.json's
+# postinstall — see events-admin/package.json)
+events-admin/lib/generated/
 
 # Terraform
 infra/terraform/.terraform/
@@ -20,3 +25,4 @@ infra/terraform/terraform.auto.tfvars.json
 secrets/prod.env
 .github/agents/*
 token.txt
+build_admin_service.md

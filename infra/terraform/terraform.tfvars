@@ -13,3 +13,8 @@ region     = "us-central1"
 # nextauth_url is set here as a real value only after the first successful
 # deploy, once the Cloud Run service's stable *.run.app URL is known — see
 # cloudrun.tf's comment on the nextauth_url variable.
+
+events_admin_authorized_members = [
+  "grantdoole@gmail.com"
+]
+
