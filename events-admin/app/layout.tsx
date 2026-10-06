@@ -1,17 +1,23 @@
 import type { Metadata } from "next";
-import { Cinzel, Rajdhani } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const displayFont = Cinzel({
-  subsets: ["latin"],
+// Font files are bundled in app/fonts/ rather than fetched from Google at build
+// time — next/font/google's build-time fetch fails intermittently in CI.
+const displayFont = localFont({
+  src: "./fonts/cinzel-variable.woff2",
   variable: "--font-display",
-  weight: ["600", "700", "800"],
+  weight: "600 800",
 });
 
-const bodyFont = Rajdhani({
-  subsets: ["latin"],
+const bodyFont = localFont({
+  src: [
+    { path: "./fonts/rajdhani-400.woff2", weight: "400" },
+    { path: "./fonts/rajdhani-500.woff2", weight: "500" },
+    { path: "./fonts/rajdhani-600.woff2", weight: "600" },
+    { path: "./fonts/rajdhani-700.woff2", weight: "700" },
+  ],
   variable: "--font-body",
-  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
