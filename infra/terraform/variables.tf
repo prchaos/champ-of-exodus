@@ -94,4 +94,12 @@ variable "events_admin_authorized_members" {
   description = "IAM members granted roles/run.invoker on the events-admin Cloud Run service"
   type        = list(string)
   default     = []
+
+  validation {
+    condition = alltrue([
+      for member in var.events_admin_authorized_members :
+      can(regex("^(user|serviceAccount|group|domain):", member))
+    ])
+    error_message = "Each member must be prefixed with its type, e.g. \"user:you@example.com\"."
+  }
 }

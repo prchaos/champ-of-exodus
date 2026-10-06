@@ -15,6 +15,6 @@ region     = "us-central1"
 # cloudrun.tf's comment on the nextauth_url variable.
 
 events_admin_authorized_members = [
-  "grantdoole@gmail.com"
+  "user:grantdoole@gmail.com"
 ]
 
