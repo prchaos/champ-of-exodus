@@ -81,6 +81,10 @@ enum EventType {
   CUSTOM
 }
 
+// READ-ONLY MIRROR. Schema and migrations for this model are owned by
+// events-admin/prisma/events/schema.prisma, which points at this same
+// champ_of_exodus database. Do NOT run `prisma migrate dev` or add
+// migrations for this model here — only events-admin creates/edits events.
 model Event {
   id          String    @id @default(cuid())
   name        String
@@ -90,6 +94,7 @@ model Event {
   reward      String
   type        EventType
   image       String?   @db.Text
+  createdBy   String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

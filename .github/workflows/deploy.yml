@@ -15,6 +15,8 @@ env:
   REPOSITORY: champ-of-exodus
   SERVICE: champ-frontend
   IMAGE: us-central1-docker.pkg.dev/ashendeng-dev/champ-of-exodus/frontend
+  EVENTS_ADMIN_SERVICE: champ-events-admin
+  EVENTS_ADMIN_IMAGE: us-central1-docker.pkg.dev/ashendeng-dev/champ-of-exodus/events-admin
   # Replace PROJECT_NUMBER with the real value from:
   #   gcloud projects describe ashendeng-dev --format='value(projectNumber)'
   WORKLOAD_IDENTITY_PROVIDER: projects/721387251831/locations/global/workloadIdentityPools/github-pool/providers/github-provider
@@ -45,9 +47,10 @@ jobs:
       - name: Generate Terraform tfvars from decrypted secrets
         run: bash scripts/generate-tfvars-json.sh
 
-      - name: Build Docker image
+      - name: Build Docker images
         run: |
           docker build -t "${IMAGE}:${GITHUB_SHA}" ./frontend
+          docker build -t "${EVENTS_ADMIN_IMAGE}:${GITHUB_SHA}" ./events-admin
 
       - uses: hashicorp/setup-terraform@v3
 
@@ -66,8 +69,10 @@ jobs:
       - name: Configure Docker auth for Artifact Registry
         run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
-      - name: Push Docker image
-        run: docker push "${IMAGE}:${GITHUB_SHA}"
+      - name: Push Docker images
+        run: |
+          docker push "${IMAGE}:${GITHUB_SHA}"
+          docker push "${EVENTS_ADMIN_IMAGE}:${GITHUB_SHA}"
 
       - name: Upload Terraform plan
         uses: actions/upload-artifact@v4
@@ -114,7 +119,34 @@ jobs:
         working-directory: infra/terraform
         run: terraform apply tfplan
 
-      - name: Deploy to Cloud Run
+      # Runs after Terraform apply so events_admin_app / events_admin_events_writer
+      # and the Cloud SQL instance already exist, and before events-admin's own
+      # deploy so the running container never serves against a schema its
+      # migrations haven't reached yet.
+      - name: Start Cloud SQL Auth Proxy
+        run: |
+          curl -sSL -o cloud-sql-proxy \
+            "https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.0/cloud-sql-proxy.linux.amd64"
+          chmod +x cloud-sql-proxy
+          CONNECTION_NAME="$(terraform -chdir=infra/terraform output -raw cloudsql_connection_name)"
+          ./cloud-sql-proxy --port 5432 "${CONNECTION_NAME}" &
+          for i in $(seq 1 15); do
+            (echo > /dev/tcp/127.0.0.1/5432) >/dev/null 2>&1 && break
+            sleep 1
+          done
+
+      - name: Apply events-admin database migrations
+        working-directory: events-admin
+        run: |
+          set -euo pipefail
+          DB_PW="$(grep '^EVENTS_ADMIN_DB_PASSWORD=' ../secrets/prod.env | cut -d= -f2-)"
+          WRITER_PW="$(grep '^EVENTS_ADMIN_EVENTS_WRITER_PASSWORD=' ../secrets/prod.env | cut -d= -f2-)"
+          export ADMIN_DATABASE_URL="postgresql://events_admin_app:${DB_PW}@127.0.0.1:5432/events_admin?schema=public"
+          export EVENTS_DATABASE_URL="postgresql://events_admin_events_writer:${WRITER_PW}@127.0.0.1:5432/champ_of_exodus?schema=public"
+          npm ci
+          bash scripts/migrate.sh
+
+      - name: Deploy champ-frontend to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
@@ -122,5 +154,15 @@ jobs:
           region: ${{ env.REGION }}
           image: ${{ env.IMAGE }}:${{ github.sha }}
 
-      - name: Print deployed URL
-        run: echo "Deployed to ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+      - name: Deploy champ-events-admin to Cloud Run
+        id: deploy-events-admin
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.EVENTS_ADMIN_SERVICE }}
+          region: ${{ env.REGION }}
+          image: ${{ env.EVENTS_ADMIN_IMAGE }}:${{ github.sha }}
+
+      - name: Print deployed URLs
+        run: |
+          echo "Deployed champ-frontend to ${{ steps.deploy.outputs.url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deployed champ-events-admin to ${{ steps.deploy-events-admin.outputs.url }} (not publicly invokable — see README 'events-admin extras')" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,38 @@
+// Owns the physical "Event" table, which lives in the champ_of_exodus
+// database (shared with frontend/, connected here via EVENTS_DATABASE_URL).
+// This schema is the source of truth for Event/EventType migrations from
+// this point forward — frontend/prisma/schema.prisma keeps a read-only type
+// mirror of this model and must never gain new migrations for it.
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../lib/generated/events-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("EVENTS_DATABASE_URL")
+}
+
+enum EventType {
+  SKILL
+  BOSS
+  MINIGAME
+  CUSTOM
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  name        String
+  description String    @db.Text
+  date        DateTime  @db.Date
+  time        String
+  reward      String
+  type        EventType
+  image       String?   @db.Text
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([date])
+  @@index([createdAt])
+}

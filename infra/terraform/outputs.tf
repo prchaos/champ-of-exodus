@@ -9,3 +9,7 @@ output "cloud_run_url" {
 output "cloudsql_connection_name" {
   value = google_sql_database_instance.postgres.connection_name
 }
+
+output "events_admin_cloud_run_url" {
+  value = google_cloud_run_v2_service.events_admin.uri
+}

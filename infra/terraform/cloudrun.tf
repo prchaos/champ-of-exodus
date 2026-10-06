@@ -112,3 +112,104 @@ resource "google_cloud_run_v2_service_iam_member" "public" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# Separately-authenticated admin console for creating/editing events. Not
+# public — see the explicit invoker grant below instead of an
+# --allow-unauthenticated-equivalent block, since this service holds admin
+# credentials in a public repo's GCP project and gets a second layer of
+# access control beyond its own login+MFA.
+resource "google_cloud_run_v2_service" "events_admin" {
+  name     = "champ-events-admin"
+  location = var.region
+
+  template {
+    service_account = "champ-events-admin-run-sa@${var.project_id}.iam.gserviceaccount.com"
+
+    containers {
+      image = "us-docker.pkg.dev/cloudrun/container/hello"
+
+      ports {
+        container_port = 3000
+      }
+
+      env {
+        name = "ADMIN_DATABASE_URL"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.events_admin_database_url.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "EVENTS_DATABASE_URL"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.events_admin_events_database_url.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "SESSION_SECRET"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.events_admin_session_secret.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name = "TOTP_ENCRYPTION_KEY"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.events_admin_totp_encryption_key.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      volume_mounts {
+        name       = "cloudsql"
+        mount_path = "/cloudsql"
+      }
+    }
+
+    volumes {
+      name = "cloudsql"
+      cloud_sql_instance {
+        instances = [google_sql_database_instance.postgres.connection_name]
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [template[0].containers[0].image]
+  }
+
+  # Same race condition fixed for `frontend` in commit 17cbec5 — an implicit
+  # dependency via secret_id reference alone doesn't guarantee the secret
+  # *versions* have a value or that this service's runtime SA has actually
+  # been granted read access yet, which surfaces as a misleading NOT_FOUND
+  # instead of PERMISSION_DENIED.
+  depends_on = [
+    google_project_service.required,
+    google_secret_manager_secret_version.events_admin_database_url,
+    google_secret_manager_secret_version.events_admin_events_database_url,
+    google_secret_manager_secret_version.events_admin_session_secret,
+    google_secret_manager_secret_version.events_admin_totp_encryption_key,
+    google_secret_manager_secret_iam_member.events_admin_runtime_access,
+  ]
+}
+
+resource "google_cloud_run_v2_service_iam_member" "events_admin_invoker" {
+  for_each = toset(var.events_admin_authorized_members)
+
+  location = google_cloud_run_v2_service.events_admin.location
+  name     = google_cloud_run_v2_service.events_admin.name
+  role     = "roles/run.invoker"
+  member   = each.value
+}

@@ -62,3 +62,44 @@ variable "auth_discord_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "events_admin_db_password" {
+  description = "Password for the events_admin database's application user"
+  type        = string
+  sensitive   = true
+}
+
+variable "events_admin_events_writer_password" {
+  description = "Password for the narrow, table-scoped user events-admin uses to read/write champ_of_exodus's Event table"
+  type        = string
+  sensitive   = true
+}
+
+variable "events_admin_session_secret" {
+  description = "Random secret used by iron-session to encrypt the events-admin login cookie"
+  type        = string
+  sensitive   = true
+}
+
+variable "events_admin_totp_encryption_key" {
+  description = "Random key used to encrypt each admin's TOTP secret at rest in the events_admin database"
+  type        = string
+  sensitive   = true
+}
+
+# events-admin's Cloud Run service is deliberately not --allow-unauthenticated
+# (unlike champ-frontend) — only these principals get roles/run.invoker.
+# Example: ["user:you@example.com"].
+variable "events_admin_authorized_members" {
+  description = "IAM members granted roles/run.invoker on the events-admin Cloud Run service"
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition = alltrue([
+      for member in var.events_admin_authorized_members :
+      can(regex("^(user|serviceAccount|group|domain):", member))
+    ])
+    error_message = "Each member must be prefixed with its type, e.g. \"user:you@example.com\"."
+  }
+}

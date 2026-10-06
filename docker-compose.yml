@@ -10,6 +10,7 @@ services:
       - "5432:5432"
     volumes:
       - champ-db-data:/var/lib/postgresql/data
+      - ./scripts/init-db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
@@ -25,6 +26,24 @@ services:
       WOM_GROUP_ID: ${WOM_GROUP_ID:-15387}
     ports:
       - "3000:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  events-admin:
+    build:
+      context: ./events-admin
+    container_name: champ-events-admin
+    environment:
+      # events-admin owns two connections: its own events_admin database
+      # (login/MFA/audit) and a second one into champ_of_exodus for the
+      # shared Event table — see events-admin/prisma/{admin,events}/schema.prisma.
+      ADMIN_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/events_admin?schema=public
+      EVENTS_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-champ_of_exodus}?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:-local-dev-session-secret-do-not-use-in-production}
+      TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:-local-dev-totp-encryption-key-do-not-use-in-production}
+    ports:
+      - "3001:3000"
     depends_on:
       db:
         condition: service_healthy

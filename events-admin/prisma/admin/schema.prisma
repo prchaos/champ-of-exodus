@@ -1,0 +1,50 @@
+// Owns the events_admin database — login credentials, MFA, and audit trail
+// for this service only. No clan/event data lives here; see
+// prisma/events/schema.prisma for the shared Event table.
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../lib/generated/admin-client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("ADMIN_DATABASE_URL")
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  username     String    @unique
+  passwordHash String
+  // Encrypted at rest (AES-256-GCM via TOTP_ENCRYPTION_KEY) — never stored
+  // or logged in plaintext. Null until the admin completes enrollment.
+  totpSecret   String?
+  totpEnabled  Boolean   @default(false)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model AdminLoginAttempt {
+  id        String   @id @default(cuid())
+  username  String
+  ip        String
+  succeeded Boolean
+  createdAt DateTime @default(now())
+
+  @@index([username, createdAt])
+  @@index([ip, createdAt])
+}
+
+// No FK to Event — it lives in a different physical database, so Prisma
+// can't relate across datasources. eventId/eventName are denormalized.
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  username  String
+  action    String
+  eventId   String?
+  detail    String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
