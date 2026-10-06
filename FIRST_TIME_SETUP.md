@@ -17,11 +17,16 @@ condensed, ordered checklist for this specific rollout.
 ### 1. Add the four new production secrets
 
 `events-admin` needs four new secret values that don't exist yet. Generate
-each one the same way as the existing `NEXTAUTH_SECRET`:
+each one with:
 
 ```bash
-openssl rand -base64 32
+openssl rand -hex 32
 ```
+
+Use `-hex`, not `-base64`, for all four. Base64 output can contain `/`, `+`
+and `=`, which break the database connection string. (Terraform now
+percent-encodes the passwords, and the migration step does too, but hex
+values avoid the issue entirely.)
 
 Open `secrets/prod.env` (gitignored — never commit this file) and add:
 

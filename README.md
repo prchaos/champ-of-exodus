@@ -269,8 +269,8 @@ Workload Identity Federation) or on your own machine.
    EVENTS_ADMIN_SESSION_SECRET=...
    EVENTS_ADMIN_TOTP_ENCRYPTION_KEY=...
    ```
-   Generate each random value the same way as `NEXTAUTH_SECRET`
-   (`openssl rand -base64 32`).
+   Generate each `EVENTS_ADMIN_*` value with `openssl rand -hex 32` — hex, not
+   base64, since the database passwords go inside connection strings.
 2. Encrypt it:
    ```bash
    make kms-encrypt-secrets

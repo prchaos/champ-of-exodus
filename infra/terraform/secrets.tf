@@ -8,8 +8,10 @@ locals {
 
   # events-admin's two connection strings — its own database, and a
   # narrow-credential connection into champ_of_exodus for the Event table.
-  events_admin_database_url        = "postgresql://${google_sql_user.events_admin_app.name}:${var.events_admin_db_password}@localhost/${google_sql_database.events_admin.name}?host=/cloudsql/${google_sql_database_instance.postgres.connection_name}&schema=public"
-  events_admin_events_database_url = "postgresql://${google_sql_user.events_admin_events_writer.name}:${var.events_admin_events_writer_password}@localhost/${google_sql_database.champ_of_exodus.name}?host=/cloudsql/${google_sql_database_instance.postgres.connection_name}&schema=public"
+  # Passwords are percent-encoded: base64 output can contain / + = which would
+  # otherwise be parsed as URL structure.
+  events_admin_database_url        = "postgresql://${google_sql_user.events_admin_app.name}:${urlencode(var.events_admin_db_password)}@localhost/${google_sql_database.events_admin.name}?host=/cloudsql/${google_sql_database_instance.postgres.connection_name}&schema=public"
+  events_admin_events_database_url = "postgresql://${google_sql_user.events_admin_events_writer.name}:${urlencode(var.events_admin_events_writer_password)}@localhost/${google_sql_database.champ_of_exodus.name}?host=/cloudsql/${google_sql_database_instance.postgres.connection_name}&schema=public"
 }
 
 resource "google_secret_manager_secret" "db_password" {

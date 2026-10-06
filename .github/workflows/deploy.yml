@@ -139,8 +139,10 @@ jobs:
         working-directory: events-admin
         run: |
           set -euo pipefail
-          DB_PW="$(grep '^EVENTS_ADMIN_DB_PASSWORD=' ../secrets/prod.env | cut -d= -f2-)"
-          WRITER_PW="$(grep '^EVENTS_ADMIN_EVENTS_WRITER_PASSWORD=' ../secrets/prod.env | cut -d= -f2-)"
+          # Percent-encode: base64 passwords can contain / + = which break URL parsing.
+          urlencode() { printf '%s' "$1" | python3 -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read(), safe=""))'; }
+          DB_PW="$(urlencode "$(grep '^EVENTS_ADMIN_DB_PASSWORD=' ../secrets/prod.env | cut -d= -f2-)")"
+          WRITER_PW="$(urlencode "$(grep '^EVENTS_ADMIN_EVENTS_WRITER_PASSWORD=' ../secrets/prod.env | cut -d= -f2-)")"
           export ADMIN_DATABASE_URL="postgresql://events_admin_app:${DB_PW}@127.0.0.1:5432/events_admin?schema=public"
           export EVENTS_DATABASE_URL="postgresql://events_admin_events_writer:${WRITER_PW}@127.0.0.1:5432/champ_of_exodus?schema=public"
           npm ci
