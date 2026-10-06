@@ -6,7 +6,7 @@ const nextConfig = {
     // the Cloud Run hostname, so Next's Server Actions origin check rejects
     // every login. Allow the local proxy origin explicitly.
     serverActions: {
-      allowedOrigins: ['localhost:8080'],
+      allowedOrigins: ['localhost:8080', '127.0.0.1:8080'],
     },
   },
 };
