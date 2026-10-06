@@ -26,3 +26,8 @@ secrets/prod.env
 .github/agents/*
 token.txt
 build_admin_service.md
+# Local tooling, not part of the repo
+cloud-sql-proxy
+cloudsql_onetime.sh
+scripts/stream-events.sh
+scripts/stream-frontend.sh
