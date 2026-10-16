@@ -50,7 +50,7 @@ resource "google_sql_user" "events_admin_app" {
 # champ_app user frontend uses, and NOT granted access to
 # Account/Session/User/VerificationToken/Rank. Cloud SQL's Terraform
 # provider doesn't model per-table GRANTs, so the actual
-# `GRANT SELECT, INSERT, UPDATE ON "Event"` (and a matching REVOKE of
+# `GRANT SELECT, INSERT, UPDATE, DELETE ON "Event"` (and a matching REVOKE of
 # broader schema defaults) must be run once by hand after this user first
 # exists — see README.md "One-Time Infrastructure Setup".
 resource "google_sql_user" "events_admin_events_writer" {

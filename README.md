@@ -241,7 +241,7 @@ deploy — none of it is repeated by CI. All commands target the GCP project
      REVOKE ALL ON SCHEMA public FROM events_admin_events_writer;
      GRANT CONNECT ON DATABASE champ_of_exodus TO events_admin_events_writer;
      GRANT USAGE ON SCHEMA public TO events_admin_events_writer;
-     GRANT SELECT, INSERT, UPDATE ON "Event" TO events_admin_events_writer;
+     GRANT SELECT, INSERT, UPDATE, DELETE ON "Event" TO events_admin_events_writer;
      ```
    - Provision the first admin account by running
      `ADMIN_DATABASE_URL=<events-admin-database-url secret value> npx tsx events-admin/scripts/seed-admin.ts`
