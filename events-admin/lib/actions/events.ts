@@ -75,3 +75,20 @@ export async function updateEvent(id: string, values: unknown) {
   revalidatePath("/dashboard");
   return event;
 }
+
+/** Permanently deletes an event. The frontend reads Event live, so it disappears from the homepage and events page on the next request. */
+export async function deleteEvent(id: string) {
+  const session = await requireSession();
+
+  const event = await eventsPrisma.event.delete({ where: { id } });
+
+  await writeAuditLog({
+    adminId: session.adminId,
+    username: session.username,
+    action: "DELETE_EVENT",
+    eventId: event.id,
+    detail: event.name,
+  });
+
+  revalidatePath("/dashboard");
+}

@@ -137,7 +137,7 @@ Then in the `psql` prompt:
 REVOKE ALL ON SCHEMA public FROM events_admin_events_writer;
 GRANT CONNECT ON DATABASE champ_of_exodus TO events_admin_events_writer;
 GRANT USAGE ON SCHEMA public TO events_admin_events_writer;
-GRANT SELECT, INSERT, UPDATE ON "Event" TO events_admin_events_writer;
+GRANT SELECT, INSERT, UPDATE, DELETE ON "Event" TO events_admin_events_writer;
 ```
 
 ### 7. Seed the first admin account

@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { EditEventModal } from "@/components/events/edit-event-modal";
-import { listRecentEvents, type RecentEvent } from "@/lib/actions/events";
+import { deleteEvent, listRecentEvents, type RecentEvent } from "@/lib/actions/events";
 import { EVENT_TYPE_LABELS } from "@/lib/validations/event";
 
 export function EditEventTab() {
@@ -12,6 +12,8 @@ export function EditEventTab() {
   const [events, setEvents] = useState<RecentEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [editingEvent, setEditingEvent] = useState<RecentEvent | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   async function loadEvents() {
     setLoading(true);
@@ -19,6 +21,22 @@ export function EditEventTab() {
       setEvents(await listRecentEvents());
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleDelete(event: RecentEvent) {
+    if (!window.confirm(`Delete "${event.name}"? This removes it from the website and can't be undone.`)) {
+      return;
+    }
+    setDeleteError(null);
+    setDeletingId(event.id);
+    try {
+      await deleteEvent(event.id);
+      await loadEvents();
+    } catch {
+      setDeleteError(`Couldn't delete "${event.name}". Try again.`);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -39,6 +57,7 @@ export function EditEventTab() {
 
       {expanded && (
         <>
+          {deleteError && <p className="form-error">{deleteError}</p>}
           {loading && <p>Loading recent events...</p>}
           {!loading && events.length === 0 && <p>No events yet.</p>}
           {!loading && events.length > 0 && (
@@ -66,8 +85,18 @@ export function EditEventTab() {
                           size="sm"
                           variant="outline"
                           onClick={() => setEditingEvent(event)}
+                          disabled={deletingId === event.id}
                         >
                           Edit
+                        </Button>{" "}
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDelete(event)}
+                          disabled={deletingId !== null}
+                        >
+                          {deletingId === event.id ? "Deleting..." : "Delete"}
                         </Button>
                       </td>
                     </tr>
